@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="MineGuard AI — Subterranean Autonomous SCADA & Dynamic Safety System · SIH26039 · Team LABELX" />
+<title>MineGuard AI · SCADA · SIH26039 · Jharia Seam XI · RL −480 m</title>
+<link rel="stylesheet" href="control_room.css" />
+</head>
+<body>
+
+<!-- TOP BAR -->
+<header class="top-bar" id="topBar">
+  <div class="top-bar__left">
+    <div class="brand-mark" aria-hidden="true">
+      <svg viewBox="0 0 40 40" width="34" height="34">
+        <polygon points="4,30 20,6 36,30" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linejoin="round"/>
+        <polygon points="12,30 20,16 28,30" fill="none" stroke="#0ea5e9" stroke-width="1.6" stroke-linejoin="round"/>
+        <circle cx="20" cy="34" r="2.4" fill="#f59e0b"/>
+      </svg>
+    </div>
+    <div class="brand-block">
+      <div class="brand-title">AI-Powered Underground Mine Safety &amp; Rescue System</div>
+      <div class="brand-chips">
+        <span class="chip">Real-time Monitoring</span>
+        <span class="chip">Hazard Detection</span>
+        <span class="chip">Worker Tracking</span>
+        <span class="chip">Smart Rescue</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="top-bar__right">
+    <div class="status-pill" id="systemStatusPill">
+      <span class="dot dot-green" id="systemStatusDot"></span>
+      <span id="systemStatusText">System Operational</span>
+    </div>
+    <div class="clock-block">
+      <div class="clock-time" id="liveClock">--:--:--</div>
+      <div class="clock-date" id="liveDate">-- --- ----</div>
+      <div class="clock-tz">IST · Asia/Kolkata</div>
+    </div>
+    <div class="operator-block">
+      <div class="operator-avatar" aria-hidden="true">👤</div>
+      <div class="operator-meta">
+        <div class="operator-name" id="operatorName">Control Room</div>
+        <div class="operator-role" id="operatorRole">Operator · Shift A</div>
+      </div>
+    </div>
+    <button class="btn btn-ghost btn-form-iva" id="btnFormIVA" title="Export DGMS Form IV-A">
+      📄 Form IV-A
+    </button>
+  </div>
+</header>
+
+<!-- GLOBAL ALERT BAR -->
+<div class="global-alert-bar" id="globalAlertBar" data-severity="none">
+  <div class="global-alert-bar__icon" id="globalAlertIcon">●</div>
+  <div class="global-alert-bar__message" id="globalAlertMessage">
+    All systems nominal · No active emergency alerts
+  </div>
+  <div class="global-alert-bar__meta">
+    <span id="globalAlertMeta">14:32:07 IST · Communication CONNECTED · 12 workers tracked</span>
+  </div>
+  <div class="global-alert-bar__actions">
+    <button class="btn btn-mini" id="btnAlertView" onclick="navigateTo('emergency')">VIEW</button>
+    <button class="btn btn-mini btn-mini--muted" id="btnAlertAck" onclick="acknowledgeAlert()">ACK</button>
+  </div>
+</div>
+
+<!-- APP SHELL -->
+<div class="app-shell">
+
+  <!-- LEFT NAV -->
+  <nav class="left-nav" id="leftNav">
+    <div class="nav-section-label">Control</div>
+
+    <a class="nav-item is-active" data-page="dashboard" onclick="navigateTo('dashboard')">
+      <span class="nav-icon">▣</span><span class="nav-label">Dashboard</span>
+    </a>
+    <a class="nav-item" data-page="map" onclick="navigateTo('map')">
+      <span class="nav-icon">⛏</span><span class="nav-label">3D Mine Map</span>
+    </a>
+    <a class="nav-item" data-page="ai" onclick="navigateTo('ai')">
+      <span class="nav-icon">◈</span><span class="nav-label">AI Risk Engine</span>
+    </a>
+    <a class="nav-item" data-page="workers" onclick="navigateTo('workers')">
+      <span class="nav-icon">👷</span><span class="nav-label">Worker Tracking</span>
+    </a>
+    <a class="nav-item" data-page="sensors" onclick="navigateTo('sensors')">
+      <span class="nav-icon">📊</span><span class="nav-label">Sensor Health</span>
+    </a>
+    <a class="nav-item" data-page="rover" onclick="navigateTo('rover')">
+      <span class="nav-icon">🤖</span><span class="nav-label">Rescue Rover</span>
+    </a>
+    <a class="nav-item" data-page="emergency" onclick="navigateTo('emergency')">
+      <span class="nav-icon">🚨</span><span class="nav-label">Emergency &amp; Reports</span>
+    </a>
+    <a class="nav-item" data-page="weather" onclick="navigateTo('weather')">
+      <span class="nav-icon">🌦</span><span class="nav-label">Weather / Flood</span>
+    </a>
+    <a class="nav-item" data-page="vehicles" onclick="navigateTo('vehicles')">
+      <span class="nav-icon">🚜</span><span class="nav-label">Vehicle Monitoring</span>
+    </a>
+
+    <div class="nav-section-label nav-section-label--mt">System</div>
+
+    <a class="nav-item" data-page="settings" onclick="navigateTo('settings')">
+      <span class="nav-icon">⚙</span><span class="nav-label">Settings</span>
+    </a>
+
+    <div class="mine-info-card" id="mineInfoCard">
+      <div class="mine-info-card__title">Mine Info</div>
+      <div class="mine-info-row"><span>Mine</span><b>Jharia Seam XI</b></div>
+      <div class="mine-info-row"><span>Operator</span><b>BCCL</b></div>
+      <div class="mine-info-row"><span>District</span><b>Dhanbad, Jharkhand</b></div>
+      <div class="mine-info-row"><span>Depth</span><b>RL −480 m</b></div>
+      <div class="mine-info-row"><span>Status</span><b class="text-green">Operational</b></div>
+      <div class="mine-info-row"><span>Compliance</span><b>DGMS CMR 2017</b></div>
+    </div>
+  </nav>
+
+  <!-- PAGE CONTAINER -->
+  <main class="page-container" id="pageContainer">
+  <!-- PAGE 1 — DASHBOARD -->
+<section class="page is-active" data-page="dashboard">
+
+  <!-- KPI ROW -->
+  <div class="kpi-row">
+    <div class="kpi-card kpi-card--risk" id="kpiRisk" onclick="navigateTo('ai')">
+      <div class="kpi-icon kpi-icon--alert">⚠</div>
+      <div class="kpi-body">
+        <div class="kpi-label">AI RISK SCORE</div>
+        <div class="kpi-value"><span id="kpiRiskScore">87</span><span class="kpi-unit">/ 100</span></div>
+        <div class="kpi-tag" id="kpiRiskTag">CRITICAL</div>
+        <div class="kpi-bar"><div class="kpi-bar-fill" id="kpiRiskBar" style="width:87%"></div></div>
+      </div>
+    </div>
+
+    <div class="kpi-card" onclick="navigateTo('emergency')">
+      <div class="kpi-icon kpi-icon--bell">🔔</div>
+      <div class="kpi-body">
+        <div class="kpi-label">ACTIVE ALERTS</div>
+        <div class="kpi-value" id="kpiActiveAlerts">3</div>
+        <div class="kpi-sub" id="kpiActiveAlertsSub">High-risk zones detected</div>
+      </div>
+    </div>
+
+    <div class="kpi-card" onclick="navigateTo('workers')">
+      <div class="kpi-icon kpi-icon--worker">👷</div>
+      <div class="kpi-body">
+        <div class="kpi-label">WORKERS UNDERGROUND</div>
+        <div class="kpi-value" id="kpiWorkers">12</div>
+        <div class="kpi-sub">
+          <span class="text-green">Safe: <b id="kpiWorkersSafe">10</b></span>
+          <span class="sep">|</span>
+          <span class="text-red">At Risk: <b id="kpiWorkersAtRisk">2</b></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="kpi-card" onclick="navigateTo('rover')">
+      <div class="kpi-icon kpi-icon--rover">🤖</div>
+      <div class="kpi-body">
+        <div class="kpi-label">ROVERS / DRONES</div>
+        <div class="kpi-value" id="kpiRovers">1</div>
+        <div class="kpi-sub"><span class="text-green" id="kpiRoversSub">Rover Online</span></div>
+      </div>
+    </div>
+
+    <div class="kpi-card" onclick="navigateTo('sensors')">
+      <div class="kpi-icon kpi-icon--comm">📡</div>
+      <div class="kpi-body">
+        <div class="kpi-label">COMMUNICATION</div>
+        <div class="kpi-value" id="kpiComm">Good</div>
+        <div class="kpi-sub">Signal Strength: <b id="kpiCommSignal">91%</b></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN 3-COLUMN AREA -->
+  <div class="dashboard-grid">
+
+    <!-- CENTER COLUMN -->
+    <div class="col-center">
+
+      <!-- UNDERGROUND MINE MAP PANEL -->
+      <div class="panel panel-map">
+        <div class="panel-header">
+          <div class="panel-header__left">
+            <span class="panel-icon">⛏</span>
+            <span class="panel-title">Underground Mine Map</span>
+            <span class="panel-live-dot"></span>
+            <span class="panel-live-label">LIVE</span>
+          </div>
+          <div class="panel-header__right">
+            <select class="select-mini" id="mapLevelSelect">
+              <option>Level 1 — −480 m RL</option>
+              <option>Level 2 — −520 m RL</option>
+              <option>Surface Overview</option>
+            </select>
+            <button class="btn btn-mini" onclick="navigateTo('map')">Expand ⤢</button>
+          </div>
+        </div>
+
+        <div class="map-stage" id="mapStage">
+          <div class="map-legend-float" id="mapLegendFloat">
+            <div class="map-legend-title">LEGEND</div>
+            <div class="map-legend-items">
+              <div class="legend-item"><span class="legend-swatch legend-swatch--green"></span>Low / Safe</div>
+              <div class="legend-item"><span class="legend-swatch legend-swatch--orange"></span>Medium / Warning</div>
+              <div class="legend-item"><span class="legend-swatch legend-swatch--red"></span>High / Critical</div>
+              <div class="legend-item"><span>👷</span>Worker</div>
+              <div class="legend-item"><span>🤖</span>Rover</div>
+              <div class="legend-item"><span>📡</span>UWB anchor</div>
+              <div class="legend-item"><span>📍</span>Hazard zone</div>
+              <div class="legend-item"><span>⚠️</span>Warning</div>
+              <div class="legend-item"><span>🚧</span>Blocked</div>
+            </div>
+          </div>
+
+          <div class="map-compass map-compass--ne">N</div>
+          <div class="map-scalebar">
+            <span>0</span><span>50</span><span>100</span><span>150 m</span>
+          </div>
+
+          <canvas id="mine3DCanvas"></canvas>
+
+          <svg id="mine2DFallback" class="map-fallback" viewBox="0 0 1000 560" style="display:none">
+            <g class="fallback-tunnels">
+              <path d="M 120 280 L 320 200 L 520 240 L 720 180" fill="none" stroke="#3fa9ff" stroke-width="10" stroke-linecap="round" opacity="0.55"/>
+              <path d="M 320 200 L 380 380 L 620 420 L 780 320" fill="none" stroke="#22c55e" stroke-width="8" stroke-linecap="round" opacity="0.5"/>
+              <path d="M 520 240 L 620 420" fill="none" stroke="#eab308" stroke-width="8" stroke-linecap="round" opacity="0.55"/>
+              <path d="M 720 180 L 780 320" fill="none" stroke="#ef4444" stroke-width="10" stroke-linecap="round" opacity="0.6"/>
+            </g>
+          </svg>
+        </div>
+
+        <div class="map-footer-hint" id="mapFooterHint">
+          Click any tunnel, junction, worker, or sensor to inspect · Drag to rotate · Scroll to zoom
+        </div>
+      </div>
+
+      <!-- SENSOR READINGS PANEL -->
+      <div class="panel panel-sensors">
+        <div class="panel-header">
+          <div class="panel-header__left">
+            <span class="panel-icon">📊</span>
+            <span class="panel-title">Sensor Readings</span>
+            <span class="panel-live-dot"></span>
+            <span class="panel-live-label">Live</span>
+          </div>
+          <div class="panel-header__right">
+            <span class="panel-updated" id="sensorUpdatedAt">Updated 2 sec ago</span>
+          </div>
+        </div>
+
+        <div class="sensor-grid" id="sensorGrid">
+
+          <div class="sensor-tile" data-sensor="ch4" data-status="warn" onclick="inspectSensor('ch4')">
+            <div class="sensor-tile__head">
+              <span class="sensor-tile__name">CH₄ · Methane</span>
+              <span class="sensor-tile__badge sensor-tile__badge--warn">HIGH</span>
+            </div>
+            <div class="sensor-tile__value"><b id="val-ch4">1.8</b><span class="unit">%</span></div>
+            <div class="sensor-tile__trend"><span class="trend-up">↑</span> rising · limit 1.25 %</div>
+            <div class="sensor-tile__loc" id="loc-ch4">Anchor A3 · Node N3-2 · Zone 3</div>
+          </div>
+
+          <div class="sensor-tile" data-sensor="co" data-status="warn" onclick="inspectSensor('co')">
+            <div class="sensor-tile__head">
+              <span class="sensor-tile__name">CO · Carbon Monoxide</span>
+              <span class="sensor-tile__badge sensor-tile__badge--warn">HIGH</span>
+            </div>
+            <div class="sensor-tile__value"><b id="val-co">32</b><span class="unit">ppm</span></div>
+            <div class="sensor-tile__trend"><span class="trend-up">↑</span> rising · TLV 50 ppm</div>
+            <div class="sensor-tile__loc" id="loc-co">Anchor A4 · Node N4-3 · Zone 4</div>
+          </div>
+
+          <div class="sensor-tile" data-sensor="o2" data-status="ok" onclick="inspectSensor('o2')">
+            <div class="sensor-tile__head">
+              <span class="sensor-tile__name">O₂ · Oxygen Purity</span>
+              <span class="sensor-tile__badge sensor-tile__badge--ok">NORMAL</span>
+            </div>
+            <div class="sensor-tile__value"><b id="val-o2">19.2</b><span class="unit">%</span></div>
+            <div class="sensor-tile__trend"><span class="trend-flat">→</span> stable · min 19.0 %</div>
+            <div class="sensor-tile__loc" id="loc-o2">Anchor A1 · Node N1-3 · Zone 1</div>
+          </div>
+
+          <div class="sensor-tile" data-sensor="temp" data-status="warn" onclick="inspectSensor('temp')">
+            <div class="sensor-tile__head">
+              <span class="sensor-tile__name">Strata Temperature</span>
+              <span class="sensor-tile__badge sensor-tile__badge--warn">HIGH</span>
+            </div>
+            <div class="sensor-tile__value"><b id="val-temp">42.1</b><span class="unit">°C</span></div>
+            <div class="sensor-tile__trend"><span class="trend-up">↑</span> ceiling 30.5 °C</div>
+            <div class="sensor-tile__loc" id="loc-temp">Anchor A3 · Node N3-3 · Zone 3</div>
+          </div>
+
+          <div class="sensor-tile" data-sensor="hum" data-status="warn" onclick="inspectSensor('hum')">
+            <div class="sensor-tile__head">
+              <span class="sensor-tile__name">Relative Humidity</span>
+              <span class="sensor-tile__badge sensor-tile__badge--warn">HIGH</span>
+            </div>
+            <div class="sensor-tile__value"><b id="val-hum">78</b><span class="unit">%</span></div>
+            <div class="sensor-tile__trend"><span class="trend-up">↑</span> threshold &lt;90 %</div>
+            <div class="sensor-tile__loc" id="loc-hum">Anchor A3 · Node N3-3 · Zone 3</div>
+          </div>
+
+          <div class="sensor-tile" data-sensor="vib" data-status="warn" onclick="inspectSensor('vib')">
+            <div class="sensor-tile__head">
+              <span class="sensor-tile__name">Strata Vibration</span>
+              <span class="sensor-tile__badge sensor-tile__badge--warn">HIGH</span>
+            </div>
+            <div class="sensor-tile__value"><b id="val-vib">4.8</b><span class="unit">mm/s</span></div>
+            <div class="sensor-tile__trend"><span class="trend-up">↑</span> collapse &gt;0.78 g</div>
+            <div class="sensor-tile__loc" id="loc-vib">Anchor A2 · Node N2-2 · Zone 2</div>
+          </div>
+
+          <div class="sensor-tile" data-sensor="water" data-status="ok" onclick="inspectSensor('water')">
+            <div class="sensor-tile__head">
+              <span class="sensor-tile__name">Sump Water Level</span>
+              <span class="sensor-tile__badge sensor-tile__badge--ok">NORMAL</span>
+            </div>
+            <div class="sensor-tile__value"><b id="val-water">22</b><span class="unit">%</span></div>
+            <div class="sensor-tile__trend"><span class="trend-flat">→</span> alarm 75 %</div>
+            <div class="sensor-tile__loc" id="loc-water">Anchor A2 · Node N2-3 · Zone 2</div>
+          </div>
+
+          <div class="sensor-tile" data-sensor="flame" data-status="ok" onclick="inspectSensor('flame')">
+            <div class="sensor-tile__head">
+              <span class="sensor-tile__name">Optical Flame (IR/UV)</span>
+              <span class="sensor-tile__badge sensor-tile__badge--ok">NOMINAL</span>
+            </div>
+            <div class="sensor-tile__value"><b id="val-flame">0.00</b><span class="unit">ratio</span></div>
+            <div class="sensor-tile__trend"><span class="trend-flat">→</span> trip &gt;0.50</div>
+            <div class="sensor-tile__loc" id="loc-flame">Anchor A3 · Node N3-2 · Zone 3</div>
+          </div>
+
+          <div class="sensor-tile" data-sensor="pm10" data-status="warn" onclick="inspectSensor('pm10')">
+            <div class="sensor-tile__head">
+              <span class="sensor-tile__name">Respirable Dust PM₁₀</span>
+              <span class="sensor-tile__badge sensor-tile__badge--warn">HIGH</span>
+            </div>
+            <div class="sensor-tile__value"><b id="val-pm10">0.84</b><span class="unit">mg/m³</span></div>
+            <div class="sensor-tile__trend"><span class="trend-up">↑</span> ceiling &lt;2.0</div>
+            <div class="sensor-tile__loc" id="loc-pm10">Anchor A4 · Node N4-3 · Zone 4</div>
+          </div>
+
+          <div class="sensor-tile" data-sensor="aqi" data-status="ok" onclick="inspectSensor('aqi')">
+            <div class="sensor-tile__head">
+              <span class="sensor-tile__name">Air Quality Index</span>
+              <span class="sensor-tile__badge sensor-tile__badge--ok">GOOD</span>
+            </div>
+            <div class="sensor-tile__value"><b id="val-aqi">42</b><span class="unit">AQI</span></div>
+            <div class="sensor-tile__trend"><span class="trend-flat">→</span> PM2.5 0.42 · CO₂ 0.18 %</div>
+            <div class="sensor-tile__loc" id="loc-aqi">Anchor A4 · Node N4-3 · Zone 4</div>
+          </div>
+
+          <div class="sensor-tile" data-sensor="airflow" data-status="ok" onclick="inspectSensor('airflow')">
+            <div class="sensor-tile__head">
+              <span class="sensor-tile__name">Shaft B Return Flow</span>
+              <span class="sensor-tile__badge sensor-tile__badge--ok">NOMINAL</span>
+            </div>
+            <div class="sensor-tile__value"><b id="val-airflow">1.85</b><span class="unit">m/s</span></div>
+            <div class="sensor-tile__trend"><span class="trend-flat">→</span> min 1.5 m/s</div>
+            <div class="sensor-tile__loc" id="loc-airflow">Shaft B · Upcast Stack</div>
+          </div>
+
+          <div class="sensor-tile" data-sensor="pir" data-status="ok" onclick="inspectSensor('pir')">
+            <div class="sensor-tile__head">
+              <span class="sensor-tile__name">PIR Motion Mesh</span>
+              <span class="sensor-tile__badge sensor-tile__badge--ok">ACTIVE</span>
+            </div>
+            <div class="sensor-tile__value"><b id="val-pir">MESH</b><span class="unit"></span></div>
+            <div class="sensor-tile__trend"><span class="trend-flat">→</span> cross-checking UWB</div>
+            <div class="sensor-tile__loc" id="loc-pir">Anchor A4 · Node N4-2 · Zone 4</div>
+          </div>
+
+        </div>
+      </div>
+      <!-- AI ANALYSIS PANEL -->
+      <div class="panel panel-ai" id="panelAI">
+        <div class="panel-header">
+          <div class="panel-header__left">
+            <span class="panel-icon">◈</span>
+            <span class="panel-title">AI Analysis · Explainable Risk Engine</span>
+          </div>
+          <div class="panel-header__right">
+            <span class="ai-risk-pill ai-risk-pill--critical" id="aiRiskPill">CRITICAL</span>
+          </div>
+        </div>
+
+        <div class="ai-hero">
+          <span class="ai-hero__icon">⚠</span>
+          <div>
+            <div class="ai-hero__title" id="aiHeroTitle">High Risk Detected — Tunnel B (Zone 3)</div>
+            <div class="ai-hero__sub" id="aiHeroSub">Composite Risk Index 92 · deterministic weighted-sum model</div>
+          </div>
+        </div>
+
+        <div class="ai-section">
+          <div class="ai-section__label">Detected Factors</div>
+          <ul class="ai-factor-list" id="aiFactors">
+            <li>Methane (CH₄) increasing — 1.8 % (safe limit 1 %)</li>
+            <li>Temperature increasing — 42.1 °C (safe limit 35 °C)</li>
+            <li>Airflow decreasing — 1.62 m/s (estimated)</li>
+            <li>Worker detected nearby — W17 · 35 m from hazard</li>
+            <li>Vibration detected (possible instability) — 4.8 mm/s</li>
+          </ul>
+        </div>
+
+        <div class="ai-section">
+          <div class="ai-section__label">Causal Attribution (Weighted)</div>
+          <div class="ai-bars" id="aiAttribution">
+            <div class="ai-bar-row"><span class="ai-bar-label">Gas Breach</span><div class="ai-bar-track"><div class="ai-bar-fill ai-bar-fill--red" style="width:42%"></div></div><span class="ai-bar-pct" id="aiPctGas">42 %</span></div>
+            <div class="ai-bar-row"><span class="ai-bar-label">Ventilation Drag</span><div class="ai-bar-track"><div class="ai-bar-fill ai-bar-fill--orange" style="width:24%"></div></div><span class="ai-bar-pct" id="aiPctVent">24 %</span></div>
+            <div class="ai-bar-row"><span class="ai-bar-label">Strata Shear</span><div class="ai-bar-track"><div class="ai-bar-fill ai-bar-fill--orange" style="width:18%"></div></div><span class="ai-bar-pct" id="aiPctStrata">18 %</span></div>
+            <div class="ai-bar-row"><span class="ai-bar-label">Machine Proximity</span><div class="ai-bar-track"><div class="ai-bar-fill ai-bar-fill--yellow" style="width:16%"></div></div><span class="ai-bar-pct" id="aiPctProx">16 %</span></div>
+          </div>
+        </div>
+
+        <div class="ai-section">
+          <div class="ai-section__label">AI Assessment</div>
+          <div class="ai-assessment">
+            <div class="ai-assessment__bar"><div class="ai-assessment__fill" id="aiAssessmentFill" style="width:92%"></div></div>
+            <div class="ai-assessment__text" id="aiAssessmentText">92 % risk of hazardous conditions</div>
+          </div>
+        </div>
+
+        <div class="ai-recommendation" id="aiRecommendation">
+          <div class="ai-recommendation__title">⚠ Recommended Action</div>
+          <div class="ai-recommendation__body" id="aiRecommendationBody">
+            Avoid sending rescuers into Tunnel B until further assessment.<br/>
+            Deploy rover for detailed inspection. Restrict entry under CMR 2017 Reg 169.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <aside class="col-right">
+
+      <!-- ROVER STATUS PANEL -->
+      <div class="panel panel-rover" id="panelRover">
+        <div class="panel-header">
+          <div class="panel-header__left">
+            <span class="panel-icon">🤖</span>
+            <span class="panel-title">Rover Status</span>
+          </div>
+          <div class="panel-header__right">
+            <button class="btn btn-link" onclick="navigateTo('rover')">View Details →</button>
+          </div>
+        </div>
+
+        <div class="rover-online-banner" id="roverOnlineBanner">
+          <span class="dot dot-green"></span>
+          <span id="roverOnlineText">ONLINE</span>
+        </div>
+
+        <div class="rover-rows">
+          <div class="rover-row"><span>Location</span><b id="roverLocation">Tunnel B (B-04)</b></div>
+          <div class="rover-row"><span>Battery</span>
+            <div class="mini-bar"><div class="mini-bar-fill" id="roverBatteryBar" style="width:94%"></div></div>
+            <b id="roverBatteryText">94 %</b>
+          </div>
+          <div class="rover-row"><span>Signal</span>
+            <div class="mini-bar"><div class="mini-bar-fill" id="roverSignalBar" style="width:91%"></div></div>
+            <b id="roverSignalText">91 %</b>
+          </div>
+          <div class="rover-row"><span>Temperature</span><b id="roverTemp">32.4 °C</b></div>
+          <div class="rover-row"><span>Speed</span><b id="roverSpeed">0.0 m/s</b></div>
+          <div class="rover-row"><span>Last Update</span><b id="roverLastUpdate">2 sec ago</b></div>
+        </div>
+
+        <div class="rover-badges">
+          <div class="rover-badge rover-badge--ok"><span>🔥</span> Gas · <b id="roverGas">Normal</b></div>
+          <div class="rover-badge rover-badge--ok"><span>📷</span> Camera · <b id="roverCam">Live</b></div>
+          <div class="rover-badge rover-badge--ok"><span>🌡</span> Thermal · <b id="roverThermal">Live</b></div>
+        </div>
+
+        <div class="rover-controls">
+          <button class="btn btn-primary" id="btnRoverStart" onclick="startRover()">▶ Dispatch to Zone 3</button>
+          <button class="btn btn-ghost" id="btnRoverStop" onclick="stopRover()">⏹ Return to Station</button>
+        </div>
+
+        <div class="rover-mini-preview">
+          <div class="rover-mini-preview__title">Live Feed — Normal Camera</div>
+          <div class="rover-mini-preview__viewport" id="roverMiniPreview">
+            <div class="rover-mini-preview__placeholder">📷 Camera feed placeholder — Tunnel B-04</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RECENT ALERTS PANEL -->
+      <div class="panel panel-alerts">
+        <div class="panel-header">
+          <div class="panel-header__left">
+            <span class="panel-icon">🚨</span>
+            <span class="panel-title">Recent Alerts</span>
+          </div>
+          <div class="panel-header__right">
+            <button class="btn btn-link" onclick="navigateTo('emergency')">View All →</button>
+          </div>
+        </div>
+
+        <div class="alerts-feed" id="alertsFeed"></div>
+      </div>
+
+      <!-- EMERGENCY TIMELINE PANEL -->
+      <div class="panel panel-timeline">
+        <div class="panel-header">
+          <div class="panel-header__left">
+            <span class="panel-icon">⏱</span>
+            <span class="panel-title">Emergency Timeline</span>
+          </div>
+          <div class="panel-header__right">
+            <span class="badge badge--active" id="timelineActiveBadge">● Active</span>
+          </div>
+        </div>
+
+        <div class="timeline" id="emergencyTimeline"></div>
+      </div>
+
+    </aside>
+  </div>
+</section>
+
+<!-- PAGE 2 — 3D MINE MAP -->
+<section class="page" data-page="map">
+  <div class="page-header">
+    <h2 class="page-title">3D Mine Map · Jharia Seam XI · RL −480 m</h2>
+    <div class="page-header__actions">
+      <button class="btn btn-mini" onclick="resetMapCamera()">Reset View</button>
+      <button class="btn btn-mini" onclick="toggleMapLegend()">Toggle Legend</button>
+    </div>
+  </div>
+
+  <div class="panel panel-map-full">
+    <div class="map-stage map-stage--full" id="mapStageFull">
+      <canvas id="mine3DFullCanvas"></canvas>
+
+      <div class="map-legend-float map-legend-float--full" id="mapLegendFull">
+        <div class="map-legend-title">MAP LEGEND</div>
+        <div class="map-legend-grid">
+          <div class="legend-item"><span class="legend-swatch legend-swatch--green"></span>Green zone — LOW / SAFE</div>
+          <div class="legend-item"><span class="legend-swatch legend-swatch--orange"></span>Orange zone — MEDIUM / WARNING</div>
+          <div class="legend-item"><span class="legend-swatch legend-swatch--red"></span>Red zone — HIGH / CRITICAL</div>
+          <div class="legend-item"><span>👷</span>Worker location</div>
+          <div class="legend-item"><span>🤖</span>Rescue rover location</div>
+          <div class="legend-item"><span>📡</span>UWB / location marker</div>
+          <div class="legend-item"><span>📍</span>Hazard marker</div>
+          <div class="legend-item"><span>🟨</span>Sensor marker</div>
+          <div class="legend-item"><span>🔥</span>Fire / flame detected</div>
+          <div class="legend-item"><span>💨</span>Gas hazard</div>
+          <div class="legend-item"><span>💧</span>Flood / water hazard</div>
+          <div class="legend-item"><span>⚠️</span>General emergency</div>
+          <div class="legend-item"><span>📶</span>Communication status</div>
+          <div class="legend-item"><span>⛏️</span>Mine entrance / shaft</div>
+          <div class="legend-item"><span>➜</span>Tunnel / route direction</div>
+          <div class="legend-item"><span>🚧</span>Blocked tunnel</div>
+          <div class="legend-item"><span>🏠</span>Surface control station</div>
+        </div>
+      </div>
+
+      <div class="map-compass map-compass--ne">N</div>
+      <div class="map-compass map-compass--se">N</div>
+      <div class="map-scalebar">
+        <span>0</span><span>100</span><span>200 m</span>
+      </div>
+
+      <div class="dgms-stamp">
+        <div class="dgms-stamp__title">DGMS STATUTORY COMPLIANCE</div>
+        <div class="dgms-stamp__sub">CMR 2017 · Reg 153 · 156 · 160 · 169</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PAGE 3 — AI RISK ENGINE -->
+<section class="page" data-page="ai">
+  <div class="page-header">
+    <h2 class="page-title">AI Risk Engine · Explainable Analysis</h2>
+    <div class="page-header__actions">
+      <span class="ai-risk-pill ai-risk-pill--critical" id="aiRiskPillFull">CRITICAL — 92 / 100</span>
+    </div>
+  </div>
+
+  <div class="grid-2col">
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">Composite Risk Index</span></div>
+      <div class="risk-gauge" id="riskGauge">
+        <div class="risk-gauge__value" id="riskGaugeValue">92</div>
+        <div class="risk-gauge__label">/ 100</div>
+        <div class="risk-gauge__band" id="riskGaugeBand">CRITICAL</div>
+      </div>
+      <div class="risk-formula">
+        Risk Index = Σ(wᵢ · Fᵢ) — deterministic weighted sum of independent factors
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">Factor Attribution</span></div>
+      <div class="ai-bars ai-bars--large" id="aiAttributionFull">
+        <div class="ai-bar-row"><span class="ai-bar-label">Gas Breach (CH₄ · CO)</span><div class="ai-bar-track"><div class="ai-bar-fill ai-bar-fill--red" style="width:42%"></div></div><span class="ai-bar-pct">42 %</span></div>
+        <div class="ai-bar-row"><span class="ai-bar-label">Ventilation Deficit</span><div class="ai-bar-track"><div class="ai-bar-fill ai-bar-fill--orange" style="width:24%"></div></div><span class="ai-bar-pct">24 %</span></div>
+        <div class="ai-bar-row"><span class="ai-bar-label">Strata Shear (g)</span><div class="ai-bar-track"><div class="ai-bar-fill ai-bar-fill--orange" style="width:18%"></div></div><span class="ai-bar-pct">18 %</span></div>
+        <div class="ai-bar-row"><span class="ai-bar-label">P2V Machine Proximity</span><div class="ai-bar-track"><div class="ai-bar-fill ai-bar-fill--yellow" style="width:16%"></div></div><span class="ai-bar-pct">16 %</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel panel-ai panel-ai--full">
+    <div class="panel-header"><span class="panel-title">Plain-English Explanation</span></div>
+    <div class="xai-explain" id="xaiExplain">
+      <p>The composite risk score of <b>92 / 100</b> is driven primarily by a <b>sustained methane breach</b> in Zone 3 (1.8 % against the CMR 2017 Reg 169 safe limit of 1.25 %). Strata temperature (42.1 °C) and shear vibration (4.8 mm/s) together suggest <b>possible roof instability</b>. Airflow drag reduction in the return airway is <b>accelerating gas accumulation</b>. Worker W17 is currently <b>35 m from the hazardous zone</b>, triggering a worker-hazard proximity weighting.</p>
+      <p>Recommended statutory action under CMR 2017 Reg 169: <b>isolate heading electrical power</b>, <b>restrict personnel entry</b>, and <b>dispatch remote reconnaissance</b> before any human rescue attempt.</p>
+    </div>
+  </div>
+</section>
+
+<!-- PAGE 4 — WORKER TRACKING -->
+<section class="page" data-page="workers">
+  <div class="page-header">
+    <h2 class="page-title">Worker Tracking · UWB Constellation</h2>
+    <div class="page-header__actions">
+      <span class="badge badge--ok">12 Tracked</span>
+      <span class="badge badge--warn">2 At Risk</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <table class="data-table" id="workersTable">
+      <thead>
+        <tr>
+          <th>Worker ID</th><th>Name</th><th>Zone</th>
+          <th>Anchor · Node</th><th>Status</th>
+          <th>HR</th><th>SpO₂</th><th>Distance from Hazard</th><th>Last Contact</th>
+        </tr>
+      </thead>
+      <tbody id="workersTableBody"></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- PAGE 5 — SENSOR HEALTH -->
+<section class="page" data-page="sensors">
+  <div class="page-header">
+    <h2 class="page-title">Sensor Health · 12 Statutory Channels</h2>
+    <div class="page-header__actions">
+      <span class="badge badge--ok">11 Online</span>
+      <span class="badge badge--warn">1 Warning</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <table class="data-table" id="sensorHealthTable">
+      <thead>
+        <tr>
+          <th>Channel</th><th>Sensor</th><th>Location</th>
+          <th>Reading</th><th>Status</th><th>Last Calibration</th>
+        </tr>
+      </thead>
+      <tbody id="sensorHealthBody"></tbody>
+    </table>
+  </div>
+</section>
+<!-- PAGE 6 — ROVER -->
+    <section class="page" data-page="rover">
+      <div class="page-header">
+        <h2 class="page-title">Rescue Rover · ROV-01 "Scout"</h2>
+        <div class="page-header__actions">
+          <span class="badge badge--ok" id="roverStatusBadge">STANDBY</span>
+        </div>
+      </div>
+
+      <div class="grid-2col">
+        <div class="panel">
+          <div class="panel-header"><span class="panel-title">Rover Telemetry</span></div>
+          <div class="rover-rows rover-rows--wide">
+            <div class="rover-row"><span>Status</span><b id="roverPageStatus">STANDBY</b></div>
+            <div class="rover-row"><span>Location</span><b id="roverPageLocation">Surface Station</b></div>
+            <div class="rover-row"><span>Battery</span><b id="roverPageBattery">100 %</b></div>
+            <div class="rover-row"><span>Communication</span><b id="roverPageComm">CONNECTED</b></div>
+            <div class="rover-row"><span>Forward CH₄</span><b id="roverPageCH4">0.22 %</b></div>
+            <div class="rover-row"><span>Thermal</span><b id="roverPageThermal">34.0 °C</b></div>
+            <div class="rover-row"><span>Humidity</span><b id="roverPageHum">72 %</b></div>
+            <div class="rover-row"><span>Obstacle Detection</span><b id="roverPageObstacle">CLEAR</b></div>
+          </div>
+          <div class="rover-controls rover-controls--wide">
+            <button class="btn btn-primary" onclick="startRover()">▶ Dispatch Rover</button>
+            <button class="btn btn-ghost" onclick="stopRover()">⏹ Recall Rover</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header"><span class="panel-title">Camera Streams</span></div>
+          <div class="camera-streams">
+            <div class="camera-tile">
+              <div class="camera-tile__label">Normal Camera</div>
+              <div class="camera-tile__viewport" id="cameraNormal">📷 feed placeholder</div>
+            </div>
+            <div class="camera-tile">
+              <div class="camera-tile__label">Thermal (FLIR)</div>
+              <div class="camera-tile__viewport camera-tile__viewport--thermal" id="cameraThermal">🌡 feed placeholder · 34 °C</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE 7 — EMERGENCY & REPORTS -->
+    <section class="page" data-page="emergency">
+      <div class="page-header">
+        <h2 class="page-title">Emergency &amp; Reports</h2>
+        <div class="page-header__actions">
+          <button class="btn btn-primary" id="btnToggleEmergency" onclick="toggleEmergency()">⚡ EMERGENCY MODE</button>
+          <button class="btn btn-ghost" onclick="openFormIVA()">📄 Export DGMS Form IV-A</button>
+        </div>
+      </div>
+
+      <div class="grid-2col">
+        <div class="panel">
+          <div class="panel-header"><span class="panel-title">Active Emergency</span></div>
+          <div class="emergency-card" id="emergencyCard">
+            <div class="emergency-card__row"><span>Emergency ID</span><b id="emgId">EM-001</b></div>
+            <div class="emergency-card__row"><span>Location</span><b id="emgLoc">Tunnel B (Zone 3)</b></div>
+            <div class="emergency-card__row"><span>Maximum Risk</span><b class="text-red" id="emgRisk">CRITICAL</b></div>
+            <div class="emergency-card__row"><span>Affected Worker</span><b id="emgWorker">W17</b></div>
+            <div class="emergency-card__row"><span>Rover</span><b id="emgRover">Dispatched</b></div>
+            <div class="emergency-card__row"><span>Status</span><b class="text-red" id="emgStatus">ACTIVE</b></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header"><span class="panel-title">Full Timeline</span></div>
+          <div class="timeline timeline--large" id="emergencyTimelineFull"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">All Alerts — Full Information</span></div>
+        <div class="alerts-feed alerts-feed--large" id="alertsFeedFull"></div>
+      </div>
+    </section>
+
+    <!-- PAGE 8 — WEATHER / FLOOD -->
+    <section class="page" data-page="weather">
+      <div class="page-header"><h2 class="page-title">Weather &amp; Flood Monitoring</h2></div>
+
+      <div class="kpi-row kpi-row--4">
+        <div class="kpi-card"><div class="kpi-body">
+          <div class="kpi-label">EXTERNAL WEATHER</div>
+          <div class="kpi-value" id="wWeather">Clear</div>
+          <div class="kpi-sub">Dhanbad surface · 28 °C</div>
+        </div></div>
+        <div class="kpi-card"><div class="kpi-body">
+          <div class="kpi-label">RAINFALL (24H)</div>
+          <div class="kpi-value" id="wRainfall">12 mm</div>
+          <div class="kpi-sub">NORMAL</div>
+        </div></div>
+        <div class="kpi-card"><div class="kpi-body">
+          <div class="kpi-label">FLOOD RISK</div>
+          <div class="kpi-value text-green" id="wFloodRisk">LOW</div>
+          <div class="kpi-sub">No ingress detected</div>
+        </div></div>
+        <div class="kpi-card"><div class="kpi-body">
+          <div class="kpi-label">MINE WATER LEVEL</div>
+          <div class="kpi-value" id="wWaterLevel">22 %</div>
+          <div class="kpi-sub">Alarm at 75 %</div>
+        </div></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">Water Ingress &amp; Affected Tunnels</span></div>
+        <div class="text-muted" id="wAffected">No tunnels currently affected. Sump level nominal.</div>
+      </div>
+    </section>
+
+    <!-- PAGE 9 — VEHICLES -->
+    <section class="page" data-page="vehicles">
+      <div class="page-header"><h2 class="page-title">Vehicle Monitoring</h2></div>
+
+      <div class="panel">
+        <table class="data-table" id="vehiclesTable">
+          <thead>
+            <tr>
+              <th>Vehicle ID</th><th>Type</th><th>Location</th>
+              <th>Speed</th><th>Operator</th><th>Fuel / Battery</th>
+              <th>Communication</th><th>Nearby Hazard</th>
+            </tr>
+          </thead>
+          <tbody id="vehiclesTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- PAGE 10 — SETTINGS -->
+    <section class="page" data-page="settings">
+      <div class="page-header"><h2 class="page-title">Settings</h2></div>
+
+      <div class="grid-2col">
+        <div class="panel">
+          <div class="panel-header"><span class="panel-title">Subsystem Toggles</span></div>
+          <div class="settings-list">
+            <label class="settings-row"><span>AI Risk Engine</span><input type="checkbox" checked /></label>
+            <label class="settings-row"><span>Sensor Monitoring</span><input type="checkbox" checked /></label>
+            <label class="settings-row"><span>Worker Tracking (UWB)</span><input type="checkbox" checked /></label>
+            <label class="settings-row"><span>Rescue Rover</span><input type="checkbox" checked /></label>
+            <label class="settings-row"><span>Communication Mesh</span><input type="checkbox" checked /></label>
+            <label class="settings-row"><span>Voice Alerts (Web Speech)</span><input type="checkbox" checked id="setVoice" /></label>
+            <label class="settings-row"><span>Sound on New CRITICAL</span><input type="checkbox" checked id="setSound" /></label>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header"><span class="panel-title">Risk Thresholds</span></div>
+          <div class="settings-list settings-list--static">
+            <div class="settings-row"><span>LOW</span><b class="text-green">0 – 39</b></div>
+            <div class="settings-row"><span>MEDIUM</span><b class="text-orange">40 – 69</b></div>
+            <div class="settings-row"><span>HIGH</span><b class="text-red">70 – 89</b></div>
+            <div class="settings-row"><span>CRITICAL</span><b class="text-red">90 – 100</b></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">Operator</span></div>
+        <div class="settings-list">
+          <label class="settings-row"><span>Operator Name</span><input type="text" id="setOperatorName" value="Control Room" /></label>
+          <label class="settings-row"><span>Control Room Status</span><input type="text" id="setControlRoom" value="Active" /></label>
+          <label class="settings-row"><span>System Status</span><input type="text" id="setSystemStatus" value="Operational" disabled /></label>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- CASCADE PANEL -->
+<div class="cascade-panel" id="cascadePanel">
+  <div class="cascade-panel__header">
+    <span>🚨 Emergency Cascades</span>
+    <button class="btn btn-mini btn-mini--muted" onclick="toggleCascadePanel()">–</button>
+  </div>
+  <div class="cascade-panel__buttons" id="cascadeButtons">
+    <button class="cascade-btn cascade-btn--grid"  onclick="triggerCascade('grid')">⚡ 1. Grid Blackout</button>
+    <button class="cascade-btn cascade-btn--ch4"   onclick="triggerCascade('ch4')">🔥 2. CH₄ Outburst</button>
+    <button class="cascade-btn cascade-btn--lhd"   onclick="triggerCascade('lhd')">🚜 3. LHD Runaway</button>
+    <button class="cascade-btn cascade-btn--roof"  onclick="triggerCascade('roof')">🧗 4. Roof Vibration</button>
+    <button class="cascade-btn cascade-btn--p2v"   onclick="triggerCascade('p2v')">👥 5. P2V Proximity</button>
+    <button class="cascade-btn cascade-btn--mesh"  onclick="triggerCascade('mesh')">📶 6. Sever Mesh</button>
+    <button class="cascade-btn cascade-btn--buzzer"onclick="triggerCascade('buzzer')">🚨 7. Cap-Lamp Buzzer</button>
+    <button class="cascade-btn cascade-btn--rover" onclick="triggerCascade('rover')">🤖 8. Scramble Rover</button>
+    <button class="cascade-btn cascade-btn--reset" onclick="triggerCascade('reset')">🟢 9. Restore Nominal</button>
+  </div>
+</div>
+
+<!-- ENTITY INSPECTOR DRAWER -->
+<aside class="entity-inspector" id="entityInspector">
+  <div class="entity-inspector__header">
+    <span class="entity-inspector__title" id="entityInspectorTitle">Entity Inspector</span>
+    <button class="btn btn-mini btn-mini--muted" onclick="closeInspector()">✕</button>
+  </div>
+  <div class="entity-inspector__body" id="entityInspectorBody">
+    <div class="inspector-empty">Click any element on the map to load diagnostics.</div>
+  </div>
+</aside>
+
+<!-- DGMS FORM IV-A MODAL -->
+<div class="modal-backdrop" id="formIVAModal" style="display:none">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="formIVATitle">
+    <div class="modal__header">
+      <div>
+        <div class="modal__title" id="formIVATitle">DGMS Form IV-A · Notice of Accident / Dangerous Occurrence</div>
+        <div class="modal__sub">Coal Mines Regulations 2017 · Reg 153 · 156 · 160 · 169 · DGMS Circular 06</div>
+      </div>
+      <button class="btn btn-mini btn-mini--muted" onclick="closeFormIVA()">✕</button>
+    </div>
+
+    <div class="modal__body" id="formIVABody">
+      <div class="form-block">
+        <div class="form-block__title">1. Mine Identification</div>
+        <div class="form-grid">
+          <div class="form-row"><label>Mine Name</label><span>Jharia Seam XI</span></div>
+          <div class="form-row"><label>Operator</label><span>Bharat Coking Coal Limited (BCCL)</span></div>
+          <div class="form-row"><label>District</label><span>Dhanbad, Jharkhand</span></div>
+          <div class="form-row"><label>Depth (RL)</label><span>−480 m</span></div>
+        </div>
+      </div>
+
+      <div class="form-block">
+        <div class="form-block__title">2. Incident Particulars</div>
+        <div class="form-grid">
+          <div class="form-row"><label>Emergency ID</label><span id="formEmgId">EM-001</span></div>
+          <div class="form-row"><label>Location</label><span id="formEmgLoc">Tunnel B (Zone 3)</span></div>
+          <div class="form-row"><label>Date &amp; Time (IST)</label><span id="formEmgTime">--</span></div>
+          <div class="form-row"><label>Classification</label><span id="formEmgClass">Dangerous Occurrence · Gas Breach</span></div>
+        </div>
+      </div>
+
+      <div class="form-block">
+        <div class="form-block__title">3. Peak Sensor Breaches</div>
+        <ul class="form-list" id="formSensorList">
+          <li>CH₄ peak 1.42 % (limit 1.25 % · CMR 2017 Reg 169)</li>
+          <li>Temperature peak 42.1 °C (limit 30.5 °C · Reg 156)</li>
+          <li>Vibration peak 4.8 mm/s (evacuation threshold 0.78 g · Reg 137)</li>
+          <li>Shaft B airflow minimum 0.75 m/s (statutory 1.85 m/s · Reg 160)</li>
+        </ul>
+      </div>
+
+      <div class="form-block">
+        <div class="form-block__title">4. Personnel Affected</div>
+        <ul class="form-list" id="formPersonnelList">
+          <li>Worker W3 — Sunil Tudu · Zone 3 · TRAPPED</li>
+          <li>Worker W17 — Zone 3 proximity · 35 m from hazard · HIGH RISK</li>
+        </ul>
+      </div>
+
+      <div class="form-block">
+        <div class="form-block__title">5. Statutory Mitigation Steps Taken</div>
+        <ul class="form-list">
+          <li>Heading electrical power isolated automatically (Reg 169)</li>
+          <li>Auxiliary ventilation engaged via ATS (Reg 160)</li>
+          <li>Autonomous rescue rover dispatched to heading</li>
+          <li>Dynamic A* escape path generated for trapped personnel</li>
+          <li>Emergency timeline logged with IST timestamps</li>
+        </ul>
+      </div>
+
+      <div class="form-block">
+        <div class="form-block__title">6. Legal References</div>
+        <ul class="form-list">
+          <li>CMR 2017 Regulation 153 — Oxygen purity standard</li>
+          <li>CMR 2017 Regulation 156 — Ventilation velocity standard</li>
+          <li>CMR 2017 Regulation 160 — Main fan redundancy &amp; ATS</li>
+          <li>CMR 2017 Regulation 169 — Methane heading circuit isolation</li>
+          <li>CMR 2017 Regulation 137 — Strata support / micro-seismic</li>
+          <li>DGMS Circular No. 06 of 2020 — Proximity Detection &amp; CAS</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="modal__footer">
+      <button class="btn btn-ghost" onclick="closeFormIVA()">Cancel</button>
+      <button class="btn btn-primary" onclick="printFormIVA()">🖨 Export PDF Audit</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST LAYER -->
+<div class="toast-layer" id="toastLayer"></div>
+
+<!-- SCRIPTS -->
+<script src="three.min.js"></script>
+<script src="tunnel_3d.js"></script>
+<script src="app.js"></script>
+<script src="escape_path.js"></script>
+<script src="map_visuals.js"></script>
+
+</body>
+</html>
